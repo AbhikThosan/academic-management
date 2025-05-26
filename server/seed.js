@@ -1,161 +1,151 @@
+require("dotenv").config();
 const mongoose = require("mongoose");
+const { faker } = require("@faker-js/faker");
 const User = require("./src/models/User");
 const Student = require("./src/models/Student");
 const Course = require("./src/models/Course");
 const Faculty = require("./src/models/Faculty");
-require("dotenv").config();
-const bcrypt = require("bcryptjs");
+const connectDB = require("./src/config/db");
 
-mongoose.connect(process.env.MONGODB_URI);
+async function seedDB() {
+  try {
+    // Validate MONGODB_URI
+    if (!process.env.MONGODB_URI) {
+      throw new Error("MONGODB_URI is not defined in .env file");
+    }
 
-const generateRandomName = () => {
-  const firstNames = [
-    "John",
-    "Jane",
-    "Michael",
-    "Sarah",
-    "David",
-    "Emily",
-    "Chris",
-    "Anna",
-    "James",
-    "Laura",
-  ];
-  const lastNames = [
-    "Smith",
-    "Johnson",
-    "Williams",
-    "Brown",
-    "Jones",
-    "Garcia",
-    "Miller",
-    "Davis",
-    "Wilson",
-    "Moore",
-  ];
-  return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${
-    lastNames[Math.floor(Math.random() * lastNames.length)]
-  }`;
-};
+    // Connect to MongoDB
+    await connectDB();
 
-const generateRandomYear = () => 2020 + Math.floor(Math.random() * 5);
-const generateRandomGrade = () => Math.floor(Math.random() * 41) + 60;
-const generateRandomDepartment = () =>
-  [
-    "Computer Science",
-    "Mathematics",
-    "Physics",
-    "Engineering",
-    "Biology",
-    "Chemistry",
-  ][Math.floor(Math.random() * 6)];
+    // Clear existing data
+    await User.deleteMany({});
+    await Student.deleteMany({});
+    await Course.deleteMany({});
+    await Faculty.deleteMany({});
 
-const seedData = async () => {
-  await User.deleteMany();
-  await Student.deleteMany();
-  await Course.deleteMany();
-  await Faculty.deleteMany();
+    // Seed Users (2 admins, 5 faculty)
+    const users = [];
+    for (let i = 0; i < 2; i++) {
+      users.push({
+        email: `admin${i + 1}@example.com`,
+        password: "admin123",
+        role: "admin",
+      });
+    }
+    for (let i = 0; i < 5; i++) {
+      users.push({
+        email: `faculty${i + 1}@example.com`,
+        password: "faculty123",
+        role: "faculty",
+      });
+    }
+    await User.insertMany(users);
+    console.log("Users seeded");
 
-  console.log("Attempting to create admin user...");
-  const adminPasswordHash = await bcrypt.hash("password123", 10);
-  console.log("Hashed password for admin:", adminPasswordHash);
-  const admin = new User({
-    email: "admin@example.com",
-    password: adminPasswordHash,
-    role: "admin",
-  });
-  console.log("Admin user before save:", admin);
+    // Seed Faculty
+    const facultyUsers = await User.find({ role: "faculty" });
+    const faculty = facultyUsers.map((user, index) => ({
+      name: faker.person.fullName(),
+      assignedCourses: [],
+    }));
+    const facultyDocs = await Faculty.insertMany(faculty);
+    console.log("Faculty seeded");
 
-  await User.collection.insertOne({
-    email: "admin@example.com",
-    password: adminPasswordHash,
-    role: "admin",
-  });
-  const savedAdmin = await User.findOne({ email: "admin@example.com" });
-  console.log("Admin user after save:", savedAdmin);
+    // Seed Students
+    const students = [];
+    for (let i = 0; i < 100; i++) {
+      students.push({
+        name: faker.person.fullName(),
+        year: faker.number.int({ min: 1, max: 4 }),
+        enrolledCourses: [],
+        grades: [],
+      });
+    }
+    const studentDocs = await Student.insertMany(students);
+    console.log("Students seeded");
 
-  const facultyUsers = [];
-  for (let i = 0; i < 10; i++) {
-    const facultyUserPassword = await bcrypt.hash("password123", 10);
-    const facultyUser = await User.collection.insertOne({
-      email: `faculty${i}@example.com`,
-      password: facultyUserPassword,
-      role: "faculty",
-    });
-    facultyUsers.push(await User.findById(facultyUser.insertedId));
-  }
+    // Seed Courses
+    const courses = [];
+    for (let i = 0; i < 20; i++) {
+      courses.push({
+        name: faker.lorem.words(3),
+        enrolledStudents: [],
+        enrollmentCount: 0,
+        enrollmentHistory: [
+          { timestamp: new Date("2025-04-01T00:00:00Z"), count: 0 },
+        ],
+      });
+    }
+    const courseDocs = await Course.insertMany(courses);
+    console.log("Courses seeded");
 
-  const faculties = [];
-  for (let i = 0; i < 10; i++) {
-    const faculty = new Faculty({
-      userId: facultyUsers[i]._id,
-      name: generateRandomName(),
-      department: generateRandomDepartment(),
-    });
-    await faculty.save();
-    faculties.push(faculty);
-  }
+    // Assign Courses to Faculty
+    for (let faculty of facultyDocs) {
+      const courseCount = faker.number.int({ min: 2, max: 3 });
+      const assignedCourses = faker.helpers.arrayElements(
+        courseDocs,
+        courseCount
+      );
+      faculty.assignedCourses = assignedCourses.map((c) => c._id);
+      await Faculty.findByIdAndUpdate(faculty._id, {
+        assignedCourses: faculty.assignedCourses,
+      });
+      for (let course of assignedCourses) {
+        await Course.findByIdAndUpdate(course._id, { facultyId: faculty._id });
+      }
+    }
+    console.log("Courses assigned to faculty");
 
-  const studentUsers = [];
-  for (let i = 0; i < 100; i++) {
-    const studentUserPassword = await bcrypt.hash("password123", 10);
-    const studentUser = await User.collection.insertOne({
-      email: `student${i}@example.com`,
-      password: studentUserPassword,
-      role: "student",
-    });
-    studentUsers.push(await User.findById(studentUser.insertedId));
-  }
+    // Enroll Students in Courses and Assign Grades
+    for (let course of courseDocs) {
+      const studentCount = faker.number.int({ min: 5, max: 15 });
+      const enrolledStudents = faker.helpers.arrayElements(
+        studentDocs,
+        studentCount
+      );
+      course.enrolledStudents = enrolledStudents.map((s) => s._id);
+      course.enrollmentCount = enrolledStudents.length;
+      course.enrollmentHistory = [];
 
-  const students = [];
-  for (let i = 0; i < 100; i++) {
-    const student = new Student({
-      userId: studentUsers[i]._id,
-      name: generateRandomName(),
-      year: generateRandomYear(),
-      grades: [],
-    });
-    await student.save();
-    students.push(student);
-  }
+      // Simulate enrollment history over 30 days (April 1 - April 30, 2025)
+      const startDate = new Date("2025-04-01T00:00:00Z");
+      let currentCount = 0;
+      for (let i = 0; i < 30; i += 5) {
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + i);
+        if (i < 25) {
+          currentCount += faker.number.int({ min: 0, max: 3 });
+          if (currentCount > enrolledStudents.length)
+            currentCount = enrolledStudents.length;
+        }
+        course.enrollmentHistory.push({ timestamp: date, count: currentCount });
+      }
+      await Course.findByIdAndUpdate(course._id, {
+        enrolledStudents: course.enrolledStudents,
+        enrollmentCount: course.enrollmentCount,
+        enrollmentHistory: course.enrollmentHistory,
+      });
 
-  const courses = [];
-  for (let i = 0; i < 20; i++) {
-    const course = new Course({
-      name: `Course ${String.fromCharCode(65 + i)}`,
-      facultyId: faculties[Math.floor(Math.random() * faculties.length)].userId,
-      enrollmentHistory: [{ count: 0 }],
-    });
-    await course.save();
-    courses.push(course);
-  }
-
-  for (let i = 0; i < students.length; i++) {
-    const numCourses = Math.floor(Math.random() * 5) + 1;
-    const assignedCourses = [];
-    for (let j = 0; j < numCourses; j++) {
-      const course = courses[Math.floor(Math.random() * courses.length)];
-      if (!assignedCourses.includes(course._id)) {
-        assignedCourses.push(course._id);
-        await Course.findByIdAndUpdate(course._id, {
-          $push: { enrolledStudents: students[i]._id },
-          $inc: { enrollmentCount: 1 },
-          $push: { enrollmentHistory: { count: course.enrollmentCount + 1 } },
-        });
-        await Student.findByIdAndUpdate(students[i]._id, {
-          $push: { enrolledCourses: course._id },
+      for (let student of enrolledStudents) {
+        await Student.findByIdAndUpdate(student._id, {
+          $addToSet: { enrolledCourses: course._id },
           $push: {
-            grades: { courseId: course._id, grade: generateRandomGrade() },
+            grades: {
+              courseId: course._id,
+              grade: faker.number.int({ min: 0, max: 100 }),
+            },
           },
         });
       }
     }
+    console.log("Students enrolled and grades assigned");
+
+    console.log("Database seeded successfully!");
+  } catch (error) {
+    console.error("Seeding error:", error);
+  } finally {
+    await mongoose.connection.close();
   }
+}
 
-  console.log(
-    "Database seeded successfully with 100 students, 20 courses, 10 faculty members, and 1 admin"
-  );
-  mongoose.connection.close();
-};
-
-seedData().catch(console.error);
+seedDB();
