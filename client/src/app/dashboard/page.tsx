@@ -3,36 +3,62 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/app/lib/redux/store";
-import { Breadcrumb } from "antd";
+import { Col, Row, Spin, Alert } from "antd";
+import SummaryCards from "./components/SummaryCards";
+import CourseEnrollmentsChart from "./components/CourseEnrollmentChart";
+import { useDashboardData } from "@/app/lib/hooks/useDashboardData";
+import TopStudents from "./components/TopStudents";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, isInitialized } = useAppSelector(
+    (state) => state.auth
+  );
+  const { summaryData, courseEnrollments, topStudents, loading, error } =
+    useDashboardData();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
+    if (isInitialized && !isAuthenticated) {
+      router.replace("/login");
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isInitialized, router]);
 
-  if (!isAuthenticated) return null;
+  if (!isInitialized || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 min-h-screen bg-gray-50 mt-6">
+        <Alert
+          message="Error"
+          description="Failed to load dashboard data. Please try again later."
+          type="error"
+          showIcon
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 min-h-screen">
-      <Breadcrumb
-        items={[
-          {
-            title: "Dashboard",
-          },
-        ]}
-        className="mb-4"
-      />
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-4">
-          Welcome, {user?.email || "User"}
-        </h2>
-        <p className="text-gray-600">Role: {user?.role || "N/A"}</p>
-      </div>
+    <div className="p-6 min-h-screen bg-gray-50 mt-6">
+      <SummaryCards summaryData={summaryData} />
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={16}>
+          <CourseEnrollmentsChart courseEnrollments={courseEnrollments} />
+        </Col>
+        <Col xs={24} md={8}>
+          <TopStudents topStudents={topStudents} />
+        </Col>
+      </Row>
     </div>
   );
 }
