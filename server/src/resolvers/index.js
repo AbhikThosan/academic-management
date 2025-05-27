@@ -7,15 +7,11 @@ const jwt = require("jsonwebtoken");
 const { Parser } = require("json2csv");
 
 const resolvers = {
-  Student: {
-    gpa: async (parent) => {
-      const grades = parent.grades || [];
-      return grades.length > 0
-        ? grades.reduce((sum, g) => sum + g.grade, 0) / grades.length
-        : 0;
-    },
-  },
   Course: {
+    faculty: async (parent) => {
+      if (!parent.facultyId) return null;
+      return await Faculty.findById(parent.facultyId);
+    },
     grades: async (parent) => {
       const students = await Student.find({
         enrolledCourses: parent._id,
@@ -26,11 +22,19 @@ const resolvers = {
             .filter((g) => g.courseId.toString() === parent._id.toString())
             .map((g) => ({
               courseId: g.courseId.toString(),
-              courseName: g.courseName || parent.name, // Fallback to parent.name
+              courseName: g.courseName || parent.name,
               grade: g.grade,
             }))
         )
         .filter((g) => g.grade !== undefined);
+    },
+  },
+  Student: {
+    gpa: async (parent) => {
+      const grades = parent.grades || [];
+      return grades.length > 0
+        ? grades.reduce((sum, g) => sum + g.grade, 0) / grades.length
+        : 0;
     },
   },
   Query: {
@@ -79,7 +83,6 @@ const resolvers = {
         .skip(skip)
         .limit(pageSize);
 
-      // Cache course names to avoid repeated queries
       const courseCache = new Map();
       const fetchCourseName = async (courseId) => {
         if (!courseCache.has(courseId)) {
@@ -119,7 +122,6 @@ const resolvers = {
       const student = await Student.findById(id).populate("enrolledCourses");
       if (!student) return null;
 
-      // Cache course names
       const courseCache = new Map();
       const fetchCourseName = async (courseId) => {
         if (!courseCache.has(courseId)) {
@@ -285,26 +287,46 @@ const resolvers = {
       if (!user || !["admin", "faculty"].includes(user.role)) {
         throw new Error("Access denied");
       }
-      const course = new Course({
-        ...input,
+      // Validate facultyId if provided
+      if (input.facultyId) {
+        const faculty = await Faculty.findById(input.facultyId);
+        if (!faculty) {
+          throw new Error(`Faculty with ID ${input.facultyId} not found`);
+        }
+      }
+      const course = await Course.create({
+        name: input.name,
+        facultyId: input.facultyId || null,
         enrolledStudents: [],
         enrollmentCount: 0,
         enrollmentHistory: [{ count: 0 }],
       });
-      await course.save();
       if (input.facultyId) {
         await Faculty.findByIdAndUpdate(input.facultyId, {
-          $push: { assignedCourses: course._id },
+          $addToSet: { assignedCourses: course._id },
         });
       }
-      return course;
+      return await Course.findById(course._id)
+        .populate("enrolledStudents")
+        .populate("facultyId");
     },
     updateCourse: async (_, { input }, { user }) => {
       if (!user || !["admin", "faculty"].includes(user.role)) {
         throw new Error("Access denied");
       }
       const { id, facultyId, ...updateData } = input;
-      const course = await Course.findByIdAndUpdate(id, updateData, {
+      // Validate facultyId if provided
+      if (facultyId) {
+        const faculty = await Faculty.findById(facultyId);
+        if (!faculty) {
+          throw new Error(`Faculty with ID ${facultyId} not found`);
+        }
+      }
+      const update = { ...updateData };
+      if (facultyId !== undefined) {
+        update.facultyId = facultyId || null;
+      }
+      const course = await Course.findByIdAndUpdate(id, update, {
         new: true,
       })
         .populate("enrolledStudents")
@@ -358,6 +380,10 @@ const resolvers = {
       if (!user || !["admin"].includes(user.role)) {
         throw new Error("Access denied");
       }
+      const faculty = await Faculty.findById(facultyId);
+      if (!faculty) {
+        throw new Error(`Faculty with ID ${facultyId} not found`);
+      }
       const course = await Course.findByIdAndUpdate(
         courseId,
         { facultyId },
@@ -384,7 +410,9 @@ const resolvers = {
           $addToSet: { enrolledCourses: courseId },
         });
       }
-      return course.populate("enrolledStudents").populate("facultyId");
+      return await Course.findById(courseId)
+        .populate("enrolledStudents")
+        .populate("facultyId");
     },
     updateStudentGrade: async (_, { input }, { user }) => {
       if (!user || !["admin", "faculty"].includes(user.role)) {
