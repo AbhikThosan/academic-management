@@ -19,14 +19,14 @@ const resolvers = {
     grades: async (parent) => {
       const students = await Student.find({
         enrolledCourses: parent._id,
-      }).populate("grades.courseId");
+      });
       return students
         .flatMap((student) =>
           student.grades
-            .filter((g) => g.courseId._id.toString() === parent._id.toString())
+            .filter((g) => g.courseId.toString() === parent._id.toString())
             .map((g) => ({
-              courseId: g.courseId._id,
-              courseName: parent.name,
+              courseId: g.courseId.toString(),
+              courseName: g.courseName || parent.name, // Fallback to parent.name
               grade: g.grade,
             }))
         )
@@ -38,7 +38,7 @@ const resolvers = {
       const totalStudents = await Student.countDocuments();
       const totalCourses = await Course.countDocuments();
       const totalFaculty = await Faculty.countDocuments();
-      const students = await Student.find().populate("grades.courseId");
+      const students = await Student.find().populate("enrolledCourses");
       const topStudents = students
         .map((student) => {
           const grades = student.grades || [];
@@ -46,14 +46,14 @@ const resolvers = {
             grades.length > 0
               ? grades.reduce((sum, g) => sum + g.grade, 0) / grades.length
               : 0;
-          return { id: student._id, name: student.name, gpa };
+          return { id: student._id.toString(), name: student.name, gpa };
         })
         .sort((a, b) => b.gpa - a.gpa)
         .slice(0, limit);
       const courses = await Course.find();
       const popularCourses = courses
         .map((course) => ({
-          id: course._id,
+          id: course._id.toString(),
           name: course.name,
           enrollmentCount: course.enrollmentCount,
         }))
@@ -76,15 +76,78 @@ const resolvers = {
       const total = await Student.countDocuments(query);
       const students = await Student.find(query)
         .populate("enrolledCourses")
-        .populate("grades.courseId")
         .skip(skip)
         .limit(pageSize);
-      return { students, total, page, pageSize };
+
+      // Cache course names to avoid repeated queries
+      const courseCache = new Map();
+      const fetchCourseName = async (courseId) => {
+        if (!courseCache.has(courseId)) {
+          const course = await Course.findById(courseId);
+          courseCache.set(courseId, course ? course.name : "Unknown Course");
+        }
+        return courseCache.get(courseId);
+      };
+
+      return {
+        students: await Promise.all(
+          students.map(async (student) => ({
+            id: student._id.toString(),
+            name: student.name,
+            year: student.year,
+            enrolledCourses: student.enrolledCourses,
+            grades: await Promise.all(
+              student.grades.map(async (g) => ({
+                courseId: g.courseId.toString(),
+                courseName: g.courseName || (await fetchCourseName(g.courseId)),
+                grade: g.grade,
+              }))
+            ),
+            gpa:
+              student.grades.length > 0
+                ? student.grades.reduce((sum, g) => sum + g.grade, 0) /
+                  student.grades.length
+                : 0,
+          }))
+        ),
+        total,
+        page,
+        pageSize,
+      };
     },
-    student: async (_, { id }) =>
-      await Student.findById(id)
-        .populate("enrolledCourses")
-        .populate("grades.courseId"),
+    student: async (_, { id }) => {
+      const student = await Student.findById(id).populate("enrolledCourses");
+      if (!student) return null;
+
+      // Cache course names
+      const courseCache = new Map();
+      const fetchCourseName = async (courseId) => {
+        if (!courseCache.has(courseId)) {
+          const course = await Course.findById(courseId);
+          courseCache.set(courseId, course ? course.name : "Unknown Course");
+        }
+        return courseCache.get(courseId);
+      };
+
+      return {
+        id: student._id.toString(),
+        name: student.name,
+        year: student.year,
+        enrolledCourses: student.enrolledCourses,
+        grades: await Promise.all(
+          student.grades.map(async (g) => ({
+            courseId: g.courseId.toString(),
+            courseName: g.courseName || (await fetchCourseName(g.courseId)),
+            grade: g.grade,
+          }))
+        ),
+        gpa:
+          student.grades.length > 0
+            ? student.grades.reduce((sum, g) => sum + g.grade, 0) /
+              student.grades.length
+            : 0,
+      };
+    },
     courses: async (_, { filter = {}, page = 1, pageSize = 10 }) => {
       let query = {};
       if (filter.search) query.name = { $regex: filter.search, $options: "i" };
@@ -124,7 +187,7 @@ const resolvers = {
           });
         }
         return history.map((entry) => ({
-          courseId: course._id,
+          courseId: course._id.toString(),
           courseName: course.name,
           date: entry.timestamp.toISOString(),
           enrollmentCount: entry.count,
@@ -132,9 +195,7 @@ const resolvers = {
       });
     },
     topStudentsReport: async (_, { filter = {} }) => {
-      let students = await Student.find()
-        .populate("enrolledCourses")
-        .populate("grades.courseId");
+      let students = await Student.find().populate("enrolledCourses");
       if (filter.courseId) {
         students = students.filter((s) =>
           s.enrolledCourses.some((c) => c._id.toString() === filter.courseId)
@@ -144,20 +205,19 @@ const resolvers = {
       return students
         .map((student) => {
           const grades = student.grades.filter(
-            (g) =>
-              !filter.courseId || g.courseId._id.toString() === filter.courseId
+            (g) => !filter.courseId || g.courseId.toString() === filter.courseId
           );
           const gpa =
             grades.length > 0
               ? grades.reduce((sum, g) => sum + g.grade, 0) / grades.length
               : 0;
           return {
-            id: student._id,
+            id: student._id.toString(),
             name: student.name,
             gpa,
             courseId: filter.courseId,
             courseName: filter.courseId
-              ? grades[0]?.courseId?.name || ""
+              ? grades[0]?.courseName || ""
               : undefined,
           };
         })
@@ -210,9 +270,9 @@ const resolvers = {
         throw new Error("Access denied");
       }
       const { id, ...updateData } = input;
-      return await Student.findByIdAndUpdate(id, updateData, { new: true })
-        .populate("enrolledCourses")
-        .populate("grades.courseId");
+      return await Student.findByIdAndUpdate(id, updateData, {
+        new: true,
+      }).populate("enrolledCourses");
     },
     deleteStudent: async (_, { id }, { user }) => {
       if (!user || !["admin", "faculty"].includes(user.role)) {
@@ -332,18 +392,21 @@ const resolvers = {
       }
       const { studentId, courseId, grade } = input;
       const student = await Student.findById(studentId);
+      const course = await Course.findById(courseId);
+      if (!course) {
+        throw new Error("Course not found");
+      }
       const gradeIndex = student.grades.findIndex(
         (g) => g.courseId.toString() === courseId
       );
       if (gradeIndex >= 0) {
         student.grades[gradeIndex].grade = grade;
+        student.grades[gradeIndex].courseName = course.name;
       } else {
-        student.grades.push({ courseId, grade });
+        student.grades.push({ courseId, courseName: course.name, grade });
       }
       await student.save();
-      await student.populate("grades.courseId");
-      const course = await Course.findById(courseId);
-      return { courseId, courseName: course.name, grade };
+      return { courseId: courseId.toString(), courseName: course.name, grade };
     },
     exportReport: async (_, { input }) => {
       const { type, filter = {} } = input;
@@ -366,7 +429,7 @@ const resolvers = {
             });
           }
           return history.map((entry) => ({
-            courseId: course._id,
+            courseId: course._id.toString(),
             courseName: course.name,
             date: entry.timestamp.toISOString().split("T")[0],
             enrollmentCount: entry.count,
@@ -376,9 +439,7 @@ const resolvers = {
         const parser = new Parser({ fields });
         return parser.parse(data);
       } else if (type === "topStudents") {
-        let students = await Student.find()
-          .populate("enrolledCourses")
-          .populate("grades.courseId");
+        let students = await Student.find().populate("enrolledCourses");
         if (filter.courseId) {
           students = students.filter((s) =>
             s.enrolledCourses.some((c) => c._id.toString() === filter.courseId)
@@ -389,21 +450,18 @@ const resolvers = {
           .map((student) => {
             const grades = student.grades.filter(
               (g) =>
-                !filter.courseId ||
-                g.courseId._id.toString() === filter.courseId
+                !filter.courseId || g.courseId.toString() === filter.courseId
             );
             const gpa =
               grades.length > 0
                 ? grades.reduce((sum, g) => sum + g.grade, 0) / grades.length
                 : 0;
             return {
-              id: student._id,
+              id: student._id.toString(),
               name: student.name,
               gpa,
               courseId: filter.courseId || "",
-              courseName: filter.courseId
-                ? grades[0]?.courseId?.name || ""
-                : "",
+              courseName: filter.courseId ? grades[0]?.courseName || "" : "",
             };
           })
           .sort((a, b) => b.gpa - a.gpa)
