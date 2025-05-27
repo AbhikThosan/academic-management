@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Layout, Menu, Button, Drawer } from "antd";
 import {
   MenuOutlined,
@@ -21,70 +21,37 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerVisible, setMobileDrawerVisible] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useAppDispatch();
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
 
-  // Role-based menu items
-  const getMenuItems = () => {
-    const items = [
-      {
-        key: "/dashboard",
-        icon: <DashboardOutlined />,
-        label: "Dashboard",
-      },
-    ];
-
-    if (user?.role === "admin") {
-      items.push(
-        {
-          key: "/students",
-          icon: <UserOutlined />,
-          label: "Students",
-        },
-        {
-          key: "/courses",
-          icon: <BookOutlined />,
-          label: "Courses",
-        },
-        {
-          key: "/faculty",
-          icon: <TeamOutlined />,
-          label: "Faculty",
-        },
-        {
-          key: "/reports",
-          icon: <BarChartOutlined />,
-          label: "Reports",
-        }
-      );
-    } else if (user?.role === "faculty") {
-      items.push(
-        {
-          key: "/courses",
-          icon: <BookOutlined />,
-          label: "Courses",
-        },
-        {
-          key: "/faculty",
-          icon: <TeamOutlined />,
-          label: "Faculty",
-        },
-        {
-          key: "/reports",
-          icon: <BarChartOutlined />,
-          label: "Reports",
-        }
-      );
-    } else if (user?.role === "student") {
-      items.push({
-        key: "/reports",
-        icon: <BarChartOutlined />,
-        label: "Reports",
-      });
-    }
-
-    return items;
-  };
+  const items = [
+    {
+      key: "/dashboard",
+      icon: <DashboardOutlined />,
+      label: "Dashboard",
+    },
+    {
+      key: "/students",
+      icon: <UserOutlined />,
+      label: "Students",
+    },
+    {
+      key: "/courses",
+      icon: <BookOutlined />,
+      label: "Courses",
+    },
+    {
+      key: "/faculty",
+      icon: <TeamOutlined />,
+      label: "Faculty",
+    },
+    {
+      key: "/reports",
+      icon: <BarChartOutlined />,
+      label: "Reports",
+    },
+  ];
 
   const handleLogout = () => {
     dispatch(logout());
@@ -111,12 +78,11 @@ export default function Sidebar() {
         onClose={toggleMobileDrawer}
         open={mobileDrawerVisible}
         className="md:hidden"
-        bodyStyle={{ padding: 0 }}
       >
         <Menu
           mode="inline"
-          defaultSelectedKeys={["/dashboard"]}
-          items={getMenuItems()}
+          selectedKeys={[pathname]}
+          items={items}
           onClick={({ key }) => {
             router.push(key);
             setMobileDrawerVisible(false);
@@ -151,8 +117,8 @@ export default function Sidebar() {
         <Menu
           theme="dark"
           mode="inline"
-          defaultSelectedKeys={["/dashboard"]}
-          items={getMenuItems()}
+          selectedKeys={[pathname]}
+          items={items}
           onClick={({ key }) => router.push(key)}
         />
         <div className="absolute bottom-4 w-full px-4">

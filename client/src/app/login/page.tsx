@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client";
-import { Button, Form, Input, message } from "antd";
-import { useAppDispatch } from "@/app/lib/redux/store";
+import { Button, Form, Input, Spin } from "antd";
+import { toast } from "react-hot-toast";
+import { useAppDispatch, useAppSelector } from "@/app/lib/redux/store";
 import { setCredentials } from "@/app/lib/redux/slices/authSlice";
 import { LOGIN } from "@/app/lib/graphql/mutations/auth";
 
@@ -11,10 +13,20 @@ export default function Login() {
   const [form] = Form.useForm();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { isAuthenticated, isInitialized } = useAppSelector(
+    (state) => state.auth
+  );
   const [loginMutation, { loading }] = useMutation(LOGIN);
+
+  useEffect(() => {
+    if (isInitialized && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, isInitialized, router]);
 
   const onFinish = async (values: { email: string; password: string }) => {
     try {
+      const toastId = toast.loading("Logging in...");
       const { data } = await loginMutation({
         variables: { email: values.email, password: values.password },
       });
@@ -22,14 +34,26 @@ export default function Login() {
         dispatch(
           setCredentials({ user: data.login.user, token: data.login.token })
         );
-        message.success("Login successful! Redirecting to dashboard...");
+        toast.success("Login successful!", { id: toastId });
         router.push("/dashboard");
       }
     } catch (error) {
-      message.error("Login failed. Please check your credentials.");
+      toast.error("Login failed. Please check your credentials.");
       console.error(error);
     }
   };
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">

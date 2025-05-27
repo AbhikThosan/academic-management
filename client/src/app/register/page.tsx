@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client";
-import { Button, Form, Input, Select, message } from "antd";
-import { useAppDispatch } from "@/app/lib/redux/store";
+import { Button, Form, Input, Select, Spin } from "antd";
+import { toast } from "react-hot-toast";
+import { useAppDispatch, useAppSelector } from "@/app/lib/redux/store";
 import { setCredentials } from "@/app/lib/redux/slices/authSlice";
 import { REGISTER } from "@/app/lib/graphql/mutations/auth";
 
@@ -13,7 +15,16 @@ export default function Register() {
   const [form] = Form.useForm();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { isAuthenticated, isInitialized } = useAppSelector(
+    (state) => state.auth
+  );
   const [registerMutation, { loading }] = useMutation(REGISTER);
+
+  useEffect(() => {
+    if (isInitialized && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, isInitialized, router]);
 
   const onFinish = async (values: {
     email: string;
@@ -21,6 +32,7 @@ export default function Register() {
     role: string;
   }) => {
     try {
+      const toastId = toast.loading("Registering...");
       const { data } = await registerMutation({
         variables: {
           email: values.email,
@@ -35,14 +47,26 @@ export default function Register() {
             token: data.register.token,
           })
         );
-        message.success("Registration successful! Redirecting to dashboard...");
+        toast.success("Registration successful!", { id: toastId });
         router.push("/dashboard");
       }
     } catch (error) {
-      message.error("Registration failed. Please try again.");
+      toast.error("Registration failed. Please try again.");
       console.error(error);
     }
   };
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -75,7 +99,7 @@ export default function Register() {
             rules={[{ required: true, message: "Please select a role" }]}
           >
             <Select placeholder="Select your role">
-              <Option value="student">Student</Option>
+              <Option value="admin">Admin</Option>
               <Option value="faculty">Faculty</Option>
             </Select>
           </Form.Item>
