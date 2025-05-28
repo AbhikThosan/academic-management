@@ -1,73 +1,145 @@
-Academic Management Dashboard Backend
-Overview
-This is the GraphQL backend for the Academic Management Dashboard, built with Node.js, Express, Apollo Server, and MongoDB. It provides APIs for administrators and faculty to manage students, courses, faculty, grades, and reports.
-Features
+# Academic Management System
 
-Authentication: JWT-based registration and login for admin and faculty roles. Anyone can register as an admin or faculty member.
-Student Management: Add, update, delete, and assign students to courses (admin and faculty).
-Course Management: Add, update, delete, and assign courses to faculty (admin only) or students (admin and faculty).
-Faculty Management: Add, update, delete faculty (admin only).
-Grade Management: Add/update student grades (admin and faculty).
-Reporting: Dashboard summary, course enrollment trends over time, top students reports, and CSV export.
+A comprehensive web application for managing academic institutions, built with Next.js, GraphQL, and MongoDB.
 
-Setup Instructions
+## Features
 
-Clone the Repository:
-git clone <repository-url>
-cd academic-dashboard-backend
+- **Dashboard**
 
-Install Dependencies:
+  - Overview of key metrics
+  - Course enrollment statistics
+  - Top performing students
+  - Interactive charts and reports
+
+- **Student Management**
+
+  - Add, edit, and delete student records
+  - Track student performance
+  - View student enrollment history
+  - GPA calculation and tracking
+
+- **Course Management**
+
+  - Create and manage courses
+  - Assign faculty to courses
+  - Track course enrollments
+  - Course performance analytics
+
+- **Faculty Management**
+
+  - Add/update student grades for courses
+  - Assign students to courses
+
+- **Reports**
+  - Course enrollment reports
+  - Student performance reports
+  - Custom date range filtering
+  - Export data to CSV
+
+## Tech Stack
+
+### Frontend
+
+- Next.js 14
+- TypeScript
+- Apollo Client
+- Redux Toolkit
+- Ant Design
+- Tailwind CSS
+- React Hot Toast
+
+### Backend
+
+- Node.js
+- Express
+- GraphQL
+- MongoDB
+- Mongoose
+- JWT Authentication
+
+## Prerequisites
+
+- Node.js (v18 or higher)
+- MongoDB
+- npm
+
+## Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/AbhikThosan/academic-management.git
+cd academic-management
+```
+
+2. Install dependencies for both client and server:
+
+```bash
+# Install client dependencies
+cd client
 npm install
 
-Configure Environment Variables:Create a .env file in the root directory with:
-MONGODB_URI=mongodb://localhost:27017/academic_dashboard
-JWT_SECRET=your_jwt_secret_here
+# Install server dependencies
+cd ../server
+npm install
+```
+
+3. Set up environment variables:
+
+Create `.env` files in both client and server directories:
+
+**Client (.env)**
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:4000/graphql
+```
+
+**Server (.env)**
+
+```env
 PORT=4000
+MONGODB_URI=mongodb://localhost:27017/academic-management
+JWT_SECRET=your_jwt_secret
+```
 
-Run MongoDB:Ensure MongoDB is running locally or provide a valid MONGODB_URI.
+4. Start the development servers:
 
-Seed the Database:Populate the database with demo data:
-npm run seed
+```bash
+# Seed demo data
+cd server
+node seed.js
+# Start server
+npm run dev
 
-This creates 2 admins, 5 faculty, 100 students, 20 courses, and sample enrollment/grade data.
+# Start client (in a new terminal)
+cd client
+npm run dev
+```
 
-Start the Server:
-npm start
+The application will be available at:
 
-The server will run at http://localhost:4000/graphql.
+- Client: http://localhost:3000
 
-API Endpoints
+## Project Structure
 
-GraphQL Endpoint: /graphql
-Queries:
-dashboardSummary: Get total counts, top students, and popular courses.
-students: Paginated student list with filters.
-student: Get a student’s profile.
-courses: Paginated course list with filters.
-facultyMembers: Paginated faculty list.
-courseEnrollmentReport: Course enrollment trends over time (filter by course and date range).
-topStudentsReport: Top students by course or institute.
-
-Mutations:
-register: Register a new admin or faculty user (open to anyone).
-login: Authenticate admin or faculty.
-addStudent, updateStudent, deleteStudent: Manage students (admin, faculty).
-addCourse, updateCourse, deleteCourse: Manage courses (admin, faculty).
-addFaculty, updateFaculty, deleteFaculty: Manage faculty (admin only).
-assignCourseToFaculty: Assign course to faculty (admin only).
-assignStudentToCourse: Enroll student in course (admin, faculty).
-updateStudentGrade: Add/update student grade (admin, faculty).
-exportReport: Export course enrollment or top students as CSV.
-
-Role-Based Access
-
-Admin: Full access to all mutations and queries, including faculty management and course-to-faculty assignment.
-Faculty: Access to student/course management and grade updates, but not faculty management or course-to-faculty assignment.
-Registration: Open to anyone to register as admin or faculty, suitable for demonstration purposes.
-
-Dependencies
-
-Node.js
-MongoDB
-Apollo Server, Express, Mongoose
-bcryptjs, jsonwebtoken, json2csv, @faker-js/faker
+```
+academic-management/
+├── client/                 # Frontend application
+│   ├── src/
+│   │   ├── app/           # Next.js app directory
+│   │   ├── components/    # Reusable components
+│   │   ├── hooks/         # Custom hooks
+│   │   ├── lib/           # Utility functions and configurations
+│   │   └── types/         # TypeScript type definitions
+│   └── public/            # Static files
+│
+└── server/                # Backend application
+    ├── src/
+    │   ├── config/       # Configuration files
+    │   ├── controllers/  # Route controllers
+    │   ├── models/       # Mongoose models
+    │   ├── resolvers/    # GraphQL resolvers
+    │   ├── schemas/      # GraphQL schemas
+    │   └── utils/        # Utility functions
+    └── tests/            # Test files
+```

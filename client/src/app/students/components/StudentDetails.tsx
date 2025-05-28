@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Card, Descriptions, Button, Row, Col } from "antd";
+import { Card, Descriptions, Button, Row, Col, Spin } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useStudent } from "@/app/hooks/useStudent";
 
@@ -14,7 +14,11 @@ export default function StudentDetails({ studentId }: StudentDetailsProps) {
   const { student, loading, error } = useStudent(studentId);
 
   if (loading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spin size="large" />
+      </div>
+    );
   }
 
   if (error || !student) {
