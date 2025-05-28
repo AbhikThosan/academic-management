@@ -22,4 +22,3 @@ export const TOP_STUDENTS_REPORT = gql`
     }
   }
 `;
-//report page

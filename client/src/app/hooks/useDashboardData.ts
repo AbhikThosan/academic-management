@@ -1,4 +1,4 @@
-import { useQuery } from "@apollo/client";
+import { ApolloError, useQuery } from "@apollo/client";
 import { DASHBOARD_SUMMARY } from "@/app/lib/graphql/queries/dashboardSummary";
 import type { ApexOptions } from "apexcharts";
 
@@ -29,7 +29,7 @@ interface DashboardData {
     tag: string;
   }>;
   loading: boolean;
-  error: any;
+  error: ApolloError | undefined;
 }
 
 export function useDashboardData(): DashboardData {

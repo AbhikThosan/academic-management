@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
-import { Drawer, Form, Input, Select, Button, Typography, Divider } from "antd";
-import { Faculty } from "@/app/lib/hooks/useCourses";
+import { Drawer, Form, Input, Select, Button, Typography } from "antd";
+import { Faculty } from "@/app/hooks/useCourses";
 
 interface CourseDrawerProps {
   open: boolean;
@@ -60,7 +60,6 @@ export default function CourseDrawer({
       footer={null}
       bodyStyle={{ padding: 28 }}
     >
-      <Divider className="mb-6 mt-0" />
       <Form form={form} layout="vertical" onFinish={handleFinish}>
         <Form.Item
           label={<span className="font-medium">Course Name</span>}

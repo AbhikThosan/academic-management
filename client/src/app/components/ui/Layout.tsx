@@ -24,12 +24,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (shouldShowSidebar) {
     return (
-      <div className="flex">
+      <div className="flex min-h-screen overflow-x-hidden">
         <Sidebar />
-        <div className="flex-1">{children}</div>
+        <main className="flex-1 overflow-x-hidden">{children}</main>
       </div>
     );
   }
 
-  return <div className="w-full">{children}</div>;
+  return <div className="w-full overflow-x-hidden">{children}</div>;
 }

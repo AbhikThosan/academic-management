@@ -71,7 +71,9 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center text-black">
+          Register
+        </h2>
         <Form form={form} name="register" onFinish={onFinish} layout="vertical">
           <Form.Item
             name="email"
@@ -109,7 +111,11 @@ export default function Register() {
             </Button>
           </Form.Item>
         </Form>
-        <Button type="link" onClick={() => router.push("/login")}>
+        <Button
+          type="link"
+          onClick={() => router.push("/login")}
+          className="text-center block w-full"
+        >
           Already registered? Log in
         </Button>
       </div>

@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, Form, Select, InputNumber, Button } from "antd";
-import type { Course, Student } from "@/app/lib/hooks/useFacultyForms";
+import type { Course, Student } from "@/app/hooks/useFacultyForms";
 
 interface AssignGradesFormProps {
   courses: Course[];
