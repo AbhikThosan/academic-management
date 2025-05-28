@@ -25,6 +25,20 @@ export const STUDENTS = gql`
   }
 `;
 
+export const STUDENTS_DROPDOWN = gql`
+  query Students($filter: StudentFilter, $page: Int!, $pageSize: Int!) {
+    students(filter: $filter, page: $page, pageSize: $pageSize) {
+      students {
+        id
+        name
+      }
+      total
+      page
+      pageSize
+    }
+  }
+`;
+
 export const STUDENT = gql`
   query Student($id: ID!) {
     student(id: $id) {
