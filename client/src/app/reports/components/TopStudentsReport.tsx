@@ -104,3 +104,4 @@ export default function TopStudentsReport({ courses }: TopStudentsReportProps) {
     </Card>
   );
 }
+//report page

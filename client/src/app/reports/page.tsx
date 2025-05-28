@@ -6,6 +6,7 @@ import { useReports } from "@/app/lib/hooks/useReports";
 import CourseEnrollmentReport from "./components/CourseEnrollmentReport";
 import TopStudentsReport from "./components/TopStudentsReport";
 
+//report page
 export default function ReportsPage() {
   const { courses, loading: coursesLoading } = useReports();
 
