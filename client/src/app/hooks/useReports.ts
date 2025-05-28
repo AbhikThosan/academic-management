@@ -47,19 +47,16 @@ interface TopStudentsReportResponse {
 }
 
 export const useReports = () => {
-  // State for course enrollment filters
   const [enrollmentCourseId, setEnrollmentCourseId] = useState<
     string | undefined
   >();
   const [dateRange, setDateRange] = useState<[string, string] | undefined>();
 
-  // State for top students filters
   const [topStudentsCourseId, setTopStudentsCourseId] = useState<
     string | undefined
   >();
   const [limit, setLimit] = useState<number>(5);
 
-  // Fetch courses for dropdown
   const { data: coursesData, loading: coursesLoading } =
     useQuery<CoursesResponse>(COURSES_DROPDOWN, {
       variables: { filter: {}, page: 1, pageSize: 100 },
@@ -70,7 +67,6 @@ export const useReports = () => {
       },
     });
 
-  // Fetch course enrollment report
   const { data: enrollmentData, loading: enrollmentLoading } =
     useQuery<CourseEnrollmentReportResponse>(COURSE_ENROLLMENT_REPORT, {
       variables: {
@@ -91,7 +87,6 @@ export const useReports = () => {
       },
     });
 
-  // Fetch top students report
   const { data: topStudentsData, loading: topStudentsLoading } =
     useQuery<TopStudentsReportResponse>(TOP_STUDENTS_REPORT, {
       variables: {
@@ -111,13 +106,11 @@ export const useReports = () => {
       },
     });
 
-  // Memoize courses
   const courses = useMemo(
     () => coursesData?.courses.courses || [],
     [coursesData]
   );
 
-  // Memoize report data
   const enrollmentReport = useMemo(
     () => enrollmentData?.courseEnrollmentReport || [],
     [enrollmentData]
@@ -127,7 +120,6 @@ export const useReports = () => {
     [topStudentsData]
   );
 
-  // Handle course enrollment report filter submission
   const handleEnrollmentFilter = (values: {
     courseId?: string;
     dateRange?: [Date, Date];
@@ -143,7 +135,6 @@ export const useReports = () => {
     }
   };
 
-  // Handle top students report filter submission
   const handleTopStudentsFilter = (values: {
     courseId?: string;
     limit: number;
@@ -152,7 +143,6 @@ export const useReports = () => {
     setLimit(values.limit);
   };
 
-  // Generate CSV for course enrollment report
   const exportEnrollmentReport = () => {
     if (!enrollmentReport.length) {
       toast.error("No data to export");
@@ -175,7 +165,6 @@ export const useReports = () => {
     toast.success("Enrollment report exported successfully");
   };
 
-  // Generate CSV for top students report
   const exportTopStudentsReport = () => {
     if (!topStudentsReport.length) {
       toast.error("No data to export");

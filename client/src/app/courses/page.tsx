@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
-import { Row, Col, Empty, Pagination } from "antd";
+import { Row, Col, Empty, Pagination, Spin } from "antd";
 import { useCourses, Course } from "../hooks/useCourses";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import CourseFilterBar from "./components/CourseFilterBar";
@@ -84,7 +84,9 @@ export default function CoursesPage() {
         onAddCourse={handleAddClick}
       />
       {loading ? (
-        <p>Loading...</p>
+        <div className="min-h-screen flex items-center justify-center">
+          <Spin size="large" />
+        </div>
       ) : (
         <>
           <Row gutter={[16, 16]} className="mt-6 sm:mt-12">
