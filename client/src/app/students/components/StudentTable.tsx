@@ -1,38 +1,76 @@
 "use client";
-import React from "react";
-import { Table, Input, Select, Pagination, Button } from "antd";
+import React, { useState } from "react";
+import { Table, Input, Select, Pagination, Button, Modal, Space } from "antd";
 import { useRouter } from "next/navigation";
-import { SearchOutlined } from "@ant-design/icons";
-import { useStudentData } from "@/app/lib/hooks/useStudentData";
+import {
+  SearchOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from "@ant-design/icons";
+import { useStudentData } from "@/app/hooks/useStudentData";
+import { useStudentMutations } from "@/app/hooks/useStudentMutations";
+import AddStudentDrawer from "./AddStudentDrawer";
+import EditStudentDrawer from "./EditStudentDrawer";
 
 const { Option } = Select;
 
+interface Student {
+  id: string;
+  name: string;
+  courses: string;
+  year: number;
+  gpa: number;
+  gpaColor: string;
+}
+
 export default function StudentTable() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
+
   const {
     studentList,
     total,
-    search,
-    setSearch,
-    course,
-    setCourse,
-    year,
-    setYear,
-    page,
-    setPage,
-    pageSize,
-    setPageSize,
-    allCourses,
-    allYears,
+    filter,
+    pagination,
+    options,
     loading,
     error,
+    refetchStudents,
   } = useStudentData();
+
+  const { deleteStudent, loading: deleteLoading } = useStudentMutations();
   const router = useRouter();
 
   const handleReset = () => {
-    setSearch("");
-    setCourse(undefined);
-    setYear(undefined);
-    setPage(1);
+    filter.setSearch("");
+    filter.setCourse(undefined);
+    filter.setYear(undefined);
+    pagination.setPage(1);
+  };
+
+  const handleEdit = (record: Student) => {
+    setSelectedStudent(record);
+    setEditDrawerOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setStudentToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!studentToDelete) return;
+    try {
+      await deleteStudent(studentToDelete);
+      setDeleteModalOpen(false);
+      setStudentToDelete(null);
+      refetchStudents();
+    } catch {
+      // Error is handled in the mutation hook
+    }
   };
 
   const columns = [
@@ -40,7 +78,7 @@ export default function StudentTable() {
       title: "Student",
       dataIndex: "name",
       key: "name",
-      render: (_: unknown, record: any) => (
+      render: (_: unknown, record: Student) => (
         <div className="flex items-center gap-3">
           <div className="font-medium">{record.name}</div>
         </div>
@@ -60,8 +98,33 @@ export default function StudentTable() {
       title: "GPA",
       dataIndex: "gpa",
       key: "gpa",
-      render: (_: unknown, record: any) => (
+      render: (_: unknown, record: Student) => (
         <span className={record.gpaColor}>{record.gpa.toFixed(2)}</span>
+      ),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_: unknown, record: Student) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEdit(record);
+            }}
+          />
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(record.id);
+            }}
+          />
+        </Space>
       ),
     },
   ];
@@ -73,22 +136,22 @@ export default function StudentTable() {
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-4 border-b">
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4">
           <Input
             placeholder="Search students..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ width: 200 }}
+            value={filter.search}
+            onChange={(e) => filter.setSearch(e.target.value)}
+            className="sm:w-full !w-[200px]"
             prefix={<SearchOutlined className="text-gray-400" />}
           />
           <Select
             allowClear
             placeholder="All Courses"
-            value={course}
-            onChange={setCourse}
-            style={{ width: 150 }}
+            value={filter.course}
+            onChange={filter.setCourse}
+            className="w-full sm:w-auto"
           >
-            {allCourses.map((c) => (
+            {options.allCourses.map((c) => (
               <Option key={c.id} value={c.id}>
                 {c.name}
               </Option>
@@ -97,19 +160,27 @@ export default function StudentTable() {
           <Select
             allowClear
             placeholder="All Years"
-            value={year}
-            onChange={setYear}
-            style={{ width: 120 }}
+            value={filter.year}
+            onChange={filter.setYear}
+            className="w-full sm:w-auto"
           >
-            {allYears.map((y) => (
+            {options.allYears.map((y) => (
               <Option key={y} value={y}>
                 {y}
               </Option>
             ))}
           </Select>
-          <div className="ml-auto flex gap-2">
-            <Button type="primary">Filter</Button>
-            <Button onClick={handleReset}>Reset</Button>
+          <Button onClick={handleReset} className="w-full sm:w-auto">
+            Reset
+          </Button>
+          <div className="w-full sm:w-auto ml-auto">
+            <Button
+              type="primary"
+              onClick={() => setDrawerOpen(true)}
+              className="w-full sm:w-auto"
+            >
+              Add Student
+            </Button>
           </div>
         </div>
         <div className="text-sm text-gray-500 mt-2">
@@ -123,7 +194,7 @@ export default function StudentTable() {
         rowKey="id"
         pagination={false}
         loading={loading}
-        onRow={(record) => ({
+        onRow={(record: Student) => ({
           onClick: () => router.push(`/students/${record.id}`),
           style: { cursor: "pointer" },
         })}
@@ -131,15 +202,49 @@ export default function StudentTable() {
 
       <div className="flex justify-end p-4 border-t">
         <Pagination
-          current={page}
-          pageSize={pageSize}
+          current={pagination.page}
+          pageSize={pagination.pageSize}
           total={total}
-          onChange={setPage}
+          onChange={pagination.setPage}
           showSizeChanger
-          onShowSizeChange={(_, size) => setPageSize(size)}
+          onShowSizeChange={(_, size) => pagination.setPageSize(size)}
           pageSizeOptions={[5, 10, 20, 50]}
         />
       </div>
+
+      <AddStudentDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onSuccess={refetchStudents}
+      />
+
+      <EditStudentDrawer
+        open={editDrawerOpen}
+        onClose={() => {
+          setEditDrawerOpen(false);
+          setSelectedStudent(null);
+        }}
+        onSuccess={refetchStudents}
+        student={selectedStudent}
+      />
+
+      <Modal
+        title="Delete Student"
+        open={deleteModalOpen}
+        onOk={confirmDelete}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setStudentToDelete(null);
+        }}
+        confirmLoading={deleteLoading}
+        okButtonProps={{ danger: true }}
+        okText="Delete"
+      >
+        <p>
+          Are you sure you want to delete this student? This action cannot be
+          undone.
+        </p>
+      </Modal>
     </div>
   );
 }

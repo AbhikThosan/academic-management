@@ -1,14 +1,13 @@
 "use client";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@apollo/client";
-import { message } from "antd";
+import { COURSES, FACULTY_MEMBERS } from "../lib/graphql/queries/courses";
 import {
-  COURSES,
-  FACULTY_MEMBERS,
   ADD_COURSE,
-  UPDATE_COURSE,
   DELETE_COURSE,
-} from "@/app/lib/graphql/courses";
+  UPDATE_COURSE,
+} from "../lib/graphql/mutations/courses";
+import toast from "react-hot-toast";
 
 export interface Course {
   id: string;
@@ -61,6 +60,7 @@ export function useCourses() {
     data: coursesData,
     loading: coursesLoading,
     error: coursesError,
+    refetch: refetchCourses,
   } = useQuery<CoursesResponse>(COURSES, {
     variables: {
       filter: {
@@ -92,7 +92,7 @@ export function useCourses() {
       },
     },
     onError: (error) => {
-      message.error(`Failed to add course: ${error.message}`);
+      toast.error(`Failed to add course: ${error.message}`);
     },
     update: (cache, { data: { addCourse } }) => {
       const existing = cache.readQuery<CoursesResponse>({
@@ -122,7 +122,7 @@ export function useCourses() {
       },
     },
     onError: (error) => {
-      message.error(`Failed to update course: ${error.message}`);
+      toast.error(`Failed to update course: ${error.message}`);
     },
     update: (cache, { data: { updateCourse } }) => {
       cache.modify({
@@ -147,7 +147,7 @@ export function useCourses() {
       },
     },
     onError: (error) => {
-      message.error(`Failed to delete course: ${error.message}`);
+      toast.error(`Failed to delete course: ${error.message}`);
     },
     update: (cache, _, { variables }) => {
       const existing = cache.readQuery<CoursesResponse>({
@@ -233,29 +233,38 @@ export function useCourses() {
   }, [facultyData]);
 
   if (coursesError) {
-    message.error(`Courses error: ${coursesError.message}`);
+    toast.error(`Courses error: ${coursesError.message}`);
   }
   if (facultyError) {
-    message.error(`Faculties error: ${facultyError.message}`);
+    toast.error(`Faculties error: ${facultyError.message}`);
   }
 
   return {
     courses: coursesData?.courses.courses || [],
     faculties,
-    search,
-    setSearch,
-    faculty,
-    setFaculty,
-    page,
-    setPage,
-    pageSize,
-    setPageSize,
-    total: coursesData?.courses.total || 0,
+    filter: {
+      search,
+      setSearch,
+      faculty,
+      setFaculty,
+    },
+    pagination: {
+      page,
+      setPage,
+      pageSize,
+      setPageSize,
+      total: coursesData?.courses.total || 0,
+    },
     loading: coursesLoading || facultyLoading,
-    drawerOpen,
-    setDrawerOpen,
-    addCourse,
-    editCourse,
-    deleteCourse,
+    drawer: {
+      open: drawerOpen,
+      setOpen: setDrawerOpen,
+    },
+    mutations: {
+      addCourse,
+      editCourse,
+      deleteCourse,
+      refetchCourses,
+    },
   };
 }

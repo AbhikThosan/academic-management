@@ -1,32 +1,16 @@
 "use client";
 import React, { useState } from "react";
-import { Row, Col, Empty, message, Pagination } from "antd";
-import { useCourses, Course } from "../lib/hooks/useCourses";
+import toast from "react-hot-toast";
+import { Row, Col, Empty, Pagination } from "antd";
+import { useCourses, Course } from "../hooks/useCourses";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import CourseFilterBar from "./components/CourseFilterBar";
 import CourseDrawer from "./components/CourseDrawer";
 import CourseCard from "./components/CourseCard";
 
 export default function CoursesPage() {
-  const {
-    courses,
-    faculties,
-    search,
-    setSearch,
-    faculty,
-    setFaculty,
-    page,
-    setPage,
-    pageSize,
-    setPageSize,
-    total,
-    loading,
-    drawerOpen,
-    setDrawerOpen,
-    addCourse,
-    deleteCourse,
-    editCourse,
-  } = useCourses();
+  const { courses, faculties, filter, pagination, loading, drawer, mutations } =
+    useCourses();
 
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [drawerMode, setDrawerMode] = useState<"add" | "edit">("add");
@@ -37,9 +21,9 @@ export default function CoursesPage() {
     name: string;
     faculty: string | undefined;
   }) => {
-    addCourse({ name: values.name, facultyId: values.faculty });
-    setDrawerOpen(false);
-    message.success("Course added");
+    mutations.addCourse({ name: values.name, facultyId: values.faculty });
+    drawer.setOpen(false);
+    toast.success("Course added");
   };
 
   const handleEditCourse = (values: {
@@ -48,23 +32,26 @@ export default function CoursesPage() {
     id?: string;
   }) => {
     if (values.id) {
-      editCourse(values.id, { name: values.name, facultyId: values.faculty });
-      message.success("Course updated");
+      mutations.editCourse(values.id, {
+        name: values.name,
+        facultyId: values.faculty,
+      });
+      toast.success("Course updated");
     }
     setEditingCourse(null);
-    setDrawerOpen(false);
+    drawer.setOpen(false);
   };
 
   const handleEditClick = (course: Course) => {
     setEditingCourse(course);
     setDrawerMode("edit");
-    setDrawerOpen(true);
+    drawer.setOpen(true);
   };
 
   const handleAddClick = () => {
     setEditingCourse(null);
     setDrawerMode("add");
-    setDrawerOpen(true);
+    drawer.setOpen(true);
   };
 
   const handleDeleteClick = (course: Course) => {
@@ -72,23 +59,27 @@ export default function CoursesPage() {
     setDeleteModalOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (courseToDelete) {
-      deleteCourse(courseToDelete.id);
-      message.success("Course deleted");
+      try {
+        await mutations.deleteCourse(courseToDelete.id);
+        toast.success("Course deleted");
+        await mutations.refetchCourses();
+      } catch {
+        // Error is already handled in the mutation hook
+      }
     }
     setDeleteModalOpen(false);
     setCourseToDelete(null);
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
-      <h1 className="text-2xl font-bold mb-4 text-black">Course Management</h1>
+    <div className="p-4 sm:p-6 min-h-screen bg-gray-50 mt-6">
       <CourseFilterBar
-        search={search}
-        setSearch={setSearch}
-        faculty={faculty}
-        setFaculty={setFaculty}
+        search={filter.search}
+        setSearch={filter.setSearch}
+        faculty={filter.faculty}
+        setFaculty={filter.setFaculty}
         faculties={faculties}
         onAddCourse={handleAddClick}
       />
@@ -96,14 +87,21 @@ export default function CoursesPage() {
         <p>Loading...</p>
       ) : (
         <>
-          <Row gutter={[24, 24]} className="mt-12">
+          <Row gutter={[16, 16]} className="mt-6 sm:mt-12">
             {courses.length === 0 ? (
               <Col span={24}>
                 <Empty description="No courses found" />
               </Col>
             ) : (
               courses.map((course) => (
-                <Col xs={24} sm={12} md={8} lg={6} key={course.id}>
+                <Col
+                  xs={24}
+                  sm={12}
+                  md={8}
+                  lg={6}
+                  key={course.id}
+                  className="flex"
+                >
                   <CourseCard
                     course={course}
                     onEdit={() => handleEditClick(course)}
@@ -113,21 +111,24 @@ export default function CoursesPage() {
               ))
             )}
           </Row>
-          <Pagination
-            current={page}
-            pageSize={pageSize}
-            total={total}
-            onChange={setPage}
-            onShowSizeChange={(_, size) => setPageSize(size)}
-            pageSizeOptions={[10, 25, 50, 100]}
-            className="mt-4 text-right"
-          />
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              current={pagination.page}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              onChange={pagination.setPage}
+              onShowSizeChange={(_, size) => pagination.setPageSize(size)}
+              pageSizeOptions={[10, 25, 50, 100]}
+              responsive
+              showSizeChanger
+            />
+          </div>
         </>
       )}
       <CourseDrawer
-        open={drawerOpen}
+        open={drawer.open}
         onClose={() => {
-          setDrawerOpen(false);
+          drawer.setOpen(false);
           setEditingCourse(null);
         }}
         onSubmit={drawerMode === "edit" ? handleEditCourse : handleAddCourse}

@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Row, Col } from "antd";
-import { useFacultyForms } from "@/app/lib/hooks/useFacultyForms";
+import { useFacultyForms } from "@/app/hooks/useFacultyForms";
 import AssignGradesForm from "./components/AssignGradesForm";
 import AssignStudentToCourseForm from "./components/AssignStudentToCourseForm";
 import { Toaster } from "react-hot-toast";
@@ -13,7 +13,6 @@ export default function FacultyPage() {
   return (
     <div className="p-6 min-h-screen bg-gray-50 mt-6">
       <Toaster position="top-right" />
-      <h1 className="text-2xl font-bold mb-4 text-black">Faculty Management</h1>
       {loading ? (
         <p>Loading courses and students...</p>
       ) : (

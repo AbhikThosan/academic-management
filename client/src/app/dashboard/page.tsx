@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/app/lib/redux/store";
-import { Col, Row, Spin, Alert } from "antd";
+import { Spin, Alert } from "antd";
 import SummaryCards from "./components/SummaryCards";
 import CourseEnrollmentsChart from "./components/CourseEnrollmentChart";
-import { useDashboardData } from "@/app/lib/hooks/useDashboardData";
+import { useDashboardData } from "@/app/hooks/useDashboardData";
 import TopStudents from "./components/TopStudents";
 
 export default function Dashboard() {
@@ -37,7 +37,7 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="p-6 min-h-screen bg-gray-50 mt-6">
+      <div className="p-4 sm:p-6 min-h-screen bg-gray-50 mt-6">
         <Alert
           message="Error"
           description="Failed to load dashboard data. Please try again later."
@@ -49,16 +49,14 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50 mt-6">
-      <SummaryCards summaryData={summaryData} />
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={16}>
-          <CourseEnrollmentsChart courseEnrollments={courseEnrollments} />
-        </Col>
-        <Col xs={24} md={8}>
+    <div className="p-4 sm:p-6 min-h-screen bg-gray-50 mt-6">
+      <div className="space-y-4 sm:space-y-6">
+        <SummaryCards summaryData={summaryData} />
+        <CourseEnrollmentsChart courseEnrollments={courseEnrollments} />
+        <div className="mt-6">
           <TopStudents topStudents={topStudents} />
-        </Col>
-      </Row>
+        </div>
+      </div>
     </div>
   );
 }

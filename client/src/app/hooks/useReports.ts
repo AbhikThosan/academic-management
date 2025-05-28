@@ -1,11 +1,11 @@
 import { useQuery } from "@apollo/client";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { COURSES_DROPDOWN } from "../graphql/courses";
+import { COURSES_DROPDOWN } from "../lib/graphql/queries/courses";
 import {
   COURSE_ENROLLMENT_REPORT,
   TOP_STUDENTS_REPORT,
-} from "../graphql/queries/reports";
+} from "../lib/graphql/queries/reports";
 import { format } from "date-fns";
 import { unparse } from "papaparse";
 
@@ -210,4 +210,3 @@ export const useReports = () => {
     exportTopStudentsReport,
   };
 };
-//report page

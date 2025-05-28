@@ -1,12 +1,12 @@
 import { useQuery, useMutation } from "@apollo/client";
 import { useMemo } from "react";
 import toast from "react-hot-toast";
-import { COURSES_DROPDOWN } from "../graphql/courses";
-import { STUDENTS_DROPDOWN } from "../graphql/queries/students";
+import { STUDENTS_DROPDOWN } from "../lib/graphql/queries/students";
 import {
   ASSIGN_STUDENT_TO_COURSE,
   UPDATE_STUDENT_GRADE,
-} from "../graphql/mutations/faculty";
+} from "../lib/graphql/mutations/faculty";
+import { COURSES_DROPDOWN } from "../lib/graphql/queries/courses";
 
 export interface Course {
   id: string;
@@ -37,7 +37,6 @@ interface StudentsResponse {
 }
 
 export const useFacultyForms = () => {
-  // Fetch courses
   const { data: coursesData, loading: coursesLoading } =
     useQuery<CoursesResponse>(COURSES_DROPDOWN, {
       variables: { filter: {}, page: 1, pageSize: 100 },
@@ -48,7 +47,6 @@ export const useFacultyForms = () => {
       },
     });
 
-  // Fetch students
   const { data: studentsData, loading: studentsLoading } =
     useQuery<StudentsResponse>(STUDENTS_DROPDOWN, {
       variables: { filter: {}, page: 1, pageSize: 100 },
@@ -59,7 +57,6 @@ export const useFacultyForms = () => {
       },
     });
 
-  // Memoize courses and students
   const courses = useMemo(
     () => coursesData?.courses.courses || [],
     [coursesData]
@@ -69,7 +66,6 @@ export const useFacultyForms = () => {
     [studentsData]
   );
 
-  // Assign student to course mutation
   const [assignStudentToCourseMutation] = useMutation(
     ASSIGN_STUDENT_TO_COURSE,
     {
@@ -87,7 +83,6 @@ export const useFacultyForms = () => {
     }
   );
 
-  // Update student grade mutation
   const [updateStudentGradeMutation] = useMutation(UPDATE_STUDENT_GRADE, {
     context: {
       headers: {
@@ -102,7 +97,6 @@ export const useFacultyForms = () => {
     },
   });
 
-  // Handle assign student submission
   const handleAssignStudent = async (values: {
     course: string;
     student: string;
@@ -121,7 +115,6 @@ export const useFacultyForms = () => {
     });
   };
 
-  // Handle grade assignment submission
   const handleAssignGrade = async (values: {
     course: string;
     student: string;

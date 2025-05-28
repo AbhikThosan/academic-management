@@ -66,12 +66,10 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Toggle Button */}
       <div className="md:hidden fixed top-4 left-4 z-50">
         <Button icon={<MenuOutlined />} onClick={toggleMobileDrawer} />
       </div>
 
-      {/* Drawer for Mobile */}
       <Drawer
         placement="left"
         closable
@@ -79,58 +77,62 @@ export default function Sidebar() {
         open={mobileDrawerVisible}
         className="md:hidden"
       >
-        <Menu
-          mode="inline"
-          selectedKeys={[pathname]}
-          items={items}
-          onClick={({ key }) => {
-            router.push(key);
-            setMobileDrawerVisible(false);
-          }}
-          style={{ height: "100%", borderRight: 0 }}
-        />
-        <div className="p-4">
-          <Button
-            type="primary"
-            icon={<LogoutOutlined />}
-            onClick={handleLogout}
-            block
-            danger
-          >
-            Logout
-          </Button>
+        <div className="flex flex-col h-full">
+          <Menu
+            mode="inline"
+            selectedKeys={[pathname]}
+            items={items}
+            onClick={({ key }) => {
+              router.push(key);
+              setMobileDrawerVisible(false);
+            }}
+            style={{ borderRight: 0 }}
+          />
+          <div className="p-4 mt-auto">
+            <Button
+              type="primary"
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+              block
+              danger
+            >
+              Logout
+            </Button>
+          </div>
         </div>
       </Drawer>
 
-      {/* Sidebar for Desktop */}
       <Sider
         collapsible
         collapsed={collapsed}
         onCollapse={(value) => setCollapsed(value)}
-        className="hidden md:block fixed top-0 left-0 h-screen"
+        className="hidden md:block fixed top-0 left-0"
         width={200}
         style={{ zIndex: 40 }}
       >
-        <div className="h-16 flex items-center justify-center text-white text-lg font-bold">
-          {collapsed ? "AM" : "Academic Mgmt"}
-        </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[pathname]}
-          items={items}
-          onClick={({ key }) => router.push(key)}
-        />
-        <div className="absolute bottom-4 w-full px-4">
-          <Button
-            type="primary"
-            icon={<LogoutOutlined />}
-            onClick={handleLogout}
-            block
-            danger
-          >
-            {collapsed ? "" : "Logout"}
-          </Button>
+        <div className="flex flex-col">
+          <div className="h-16 flex items-center justify-center text-white text-lg font-bold">
+            {collapsed ? "AM" : "Academic Mgmt"}
+          </div>
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[pathname]}
+            items={items}
+            onClick={({ key }) => router.push(key)}
+            className="flex-1"
+          />
+          <div className="p-4 mt-16">
+            <Button
+              type="primary"
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+              block
+              danger
+            >
+              {collapsed ? "" : "Logout"}
+            </Button>
+          </div>
         </div>
       </Sider>
     </>

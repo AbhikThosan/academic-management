@@ -1,7 +1,7 @@
 import React from "react";
-import { Input, Select, Button, Card, Typography } from "antd";
+import { Input, Select, Button, Card, Typography, Form } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { Faculty } from "@/app/lib/hooks/useCourses";
+import { Faculty } from "@/app/hooks/useCourses";
 
 interface CourseFilterBarProps {
   search: string;
@@ -12,6 +12,11 @@ interface CourseFilterBarProps {
   onAddCourse: () => void;
 }
 
+interface FilterFormValues {
+  search: string;
+  faculty: string | undefined;
+}
+
 export default function CourseFilterBar({
   search,
   setSearch,
@@ -20,42 +25,68 @@ export default function CourseFilterBar({
   faculties,
   onAddCourse,
 }: CourseFilterBarProps) {
+  const [form] = Form.useForm<FilterFormValues>();
+
+  const handleReset = () => {
+    form.resetFields();
+    setSearch("");
+    setFaculty(undefined);
+  };
+
+  const handleValuesChange = (changedValues: Partial<FilterFormValues>) => {
+    if ("search" in changedValues) {
+      setSearch(changedValues.search || "");
+    }
+    if ("faculty" in changedValues) {
+      setFaculty(changedValues.faculty);
+    }
+  };
+
   return (
     <Card className="mb-6 shadow-sm">
-      <div className="flex flex-wrap gap-4 items-center">
+      <Form
+        form={form}
+        initialValues={{ search, faculty }}
+        onValuesChange={handleValuesChange}
+        className="flex flex-wrap gap-4 items-baseline"
+      >
         <Typography.Text strong className="mr-4 text-base">
           Filters:
         </Typography.Text>
-        <Input.Search
-          placeholder="Search courses..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 220 }}
-          allowClear
-        />
-        <Select
-          allowClear
-          placeholder="All Faculties"
-          value={faculty}
-          onChange={setFaculty}
-          style={{ width: 180 }}
-        >
-          {faculties.map((f) => (
-            <Select.Option key={f.id} value={f.id}>
-              {f.name}
-            </Select.Option>
-          ))}
-        </Select>
+        <Form.Item name="search" className="mb-0 w-full sm:w-auto">
+          <Input.Search
+            placeholder="Search courses..."
+            className="w-full sm:w-[220px]"
+            allowClear
+          />
+        </Form.Item>
+        <Form.Item name="faculty" className="mb-0 w-full sm:w-auto">
+          <Select
+            allowClear
+            placeholder="All Faculties"
+            className="w-full sm:w-[180px]"
+          >
+            {faculties.map((f) => (
+              <Select.Option key={f.id} value={f.id}>
+                {f.name}
+              </Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
+        <Button onClick={handleReset} className="w-full sm:w-auto">
+          Reset
+        </Button>
         <div className="flex-1" />
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={onAddCourse}
           size="large"
+          className="w-full sm:w-auto"
         >
           Add Course
         </Button>
-      </div>
+      </Form>
     </Card>
   );
 }

@@ -3,7 +3,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { Card, Descriptions, Button, Row, Col } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { useStudent } from "@/app/lib/hooks/useStudentData";
+import { useStudent } from "@/app/hooks/useStudent";
 
 interface StudentDetailsProps {
   studentId: string;

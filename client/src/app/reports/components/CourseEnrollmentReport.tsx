@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, Form, Select, DatePicker, Button, Table } from "antd";
-import { useReports } from "@/app/lib/hooks/useReports";
-import type { Course } from "@/app/lib/hooks/useReports";
+import { useReports } from "@/app/hooks/useReports";
+import type { Course } from "@/app/hooks/useReports";
 import { format } from "date-fns";
 
 const { RangePicker } = DatePicker;
@@ -28,27 +28,37 @@ export default function CourseEnrollmentReport({
     handleEnrollmentFilter(values);
   };
 
+  const handleReset = () => {
+    form.resetFields();
+    handleEnrollmentFilter({});
+  };
+
   const columns = [
     {
       title: "Course ID",
       dataIndex: "courseId",
       key: "courseId",
+      className: "text-sm sm:text-base",
+      render: (courseId: string) => courseId.slice(-4),
     },
     {
       title: "Course Name",
       dataIndex: "courseName",
       key: "courseName",
+      className: "text-sm sm:text-base",
     },
     {
       title: "Date",
       dataIndex: "date",
       key: "date",
+      className: "text-sm sm:text-base",
       render: (date: string) => format(new Date(date), "yyyy-MM-dd"),
     },
     {
       title: "Enrollment Count",
       dataIndex: "enrollmentCount",
       key: "enrollmentCount",
+      className: "text-sm sm:text-base",
     },
   ];
 
@@ -58,15 +68,25 @@ export default function CourseEnrollmentReport({
       bodyStyle={{ padding: 32 }}
       style={{ borderRadius: 20 }}
     >
-      <h2 className="text-xl font-semibold mb-6">Course Enrollment Report</h2>
+      <h2 className="text-lg sm:text-xl font-semibold mb-6">
+        Course Enrollment Report
+      </h2>
       <Form
         form={form}
         layout="inline"
         onFinish={handleFinish}
-        className="mb-6"
+        className="mb-6 flex flex-col sm:flex-row flex-wrap gap-4"
       >
-        <Form.Item name="courseId" label="Course">
-          <Select placeholder="Select course" style={{ width: 200 }} allowClear>
+        <Form.Item
+          name="courseId"
+          label={<span className="text-sm sm:text-base">Course</span>}
+          className="w-full sm:w-auto"
+        >
+          <Select
+            placeholder="Select course"
+            className="w-full sm:w-[200px] text-sm sm:text-base"
+            allowClear
+          >
             {courses.map((c) => (
               <Select.Option key={c.id} value={c.id}>
                 {c.name}
@@ -74,31 +94,50 @@ export default function CourseEnrollmentReport({
             ))}
           </Select>
         </Form.Item>
-        <Form.Item name="dateRange" label="Date Range">
-          <RangePicker format="YYYY-MM-DD" />
+        <Form.Item
+          name="dateRange"
+          label={<span className="text-sm sm:text-base">Date Range</span>}
+          className="w-full sm:w-auto"
+        >
+          <RangePicker
+            format="YYYY-MM-DD"
+            className="w-full sm:w-auto text-sm sm:text-base"
+          />
         </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit" disabled={loading}>
+        <Form.Item className="w-full sm:w-auto">
+          <Button
+            type="primary"
+            htmlType="submit"
+            disabled={loading}
+            className="text-sm sm:text-base"
+          >
             Generate Report
           </Button>
         </Form.Item>
-        <Form.Item>
+        <Form.Item className="w-full sm:w-auto">
           <Button
             onClick={exportEnrollmentReport}
             disabled={loading || !enrollmentReport.length}
+            className="text-sm sm:text-base"
           >
             Export CSV
           </Button>
         </Form.Item>
+        <Form.Item className="w-full sm:w-auto">
+          <Button onClick={handleReset} className="text-sm sm:text-base">
+            Reset
+          </Button>
+        </Form.Item>
       </Form>
-      <Table
-        columns={columns}
-        dataSource={enrollmentReport}
-        rowKey="date"
-        loading={loading}
-        pagination={false}
-      />
+      <div className="mt-6">
+        <Table
+          columns={columns}
+          dataSource={enrollmentReport}
+          rowKey="date"
+          loading={loading}
+          className="text-sm sm:text-base"
+        />
+      </div>
     </Card>
   );
 }
-//report page
