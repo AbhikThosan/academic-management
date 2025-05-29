@@ -40,7 +40,7 @@ A comprehensive web application for managing academic institutions, built with N
 
 ### Frontend
 
-- Next.js 14
+- Next.js 15
 - TypeScript
 - Apollo Client
 - Redux Toolkit
