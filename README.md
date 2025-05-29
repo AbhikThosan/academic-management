@@ -91,7 +91,8 @@ Create `.env` files in both client and server directories:
 **Client (.env)**
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:4000/graphql
+NEXT_PUBLIC_GRAPHQL_ENDPOINT=http://localhost:4000/graphql
+NEXT_PUBLIC_APP_NAME=Academic Management
 ```
 
 **Server (.env)**
